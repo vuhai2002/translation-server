@@ -38,6 +38,110 @@ A secure proxy server for translation services like OpenAI and Microsoft Transla
    docker-compose up -d
    ```
 
+## Chạy và Kiểm thử
+
+### Bước 1: Cài đặt Các Phụ thuộc
+Đầu tiên, bạn cần cài đặt các phụ thuộc của dự án:
+```
+cd d:\SourceCode\translation-server
+npm install
+```
+
+### Bước 2: Chạy Server
+Bạn có thể chạy server theo hai cách:
+
+#### Cách 1: Chạy trực tiếp với Node.js
+Chạy ở chế độ development với nodemon (tự động khởi động lại khi code thay đổi):
+```
+npm run dev
+```
+
+Hoặc chạy ở chế độ production:
+```
+npm start
+```
+
+#### Cách 2: Chạy với Docker
+Chạy server trong container Docker trên cổng 3000:
+```
+docker-compose up -d
+```
+
+### Bước 3: Kiểm thử API
+
+#### Kiểm tra Endpoint Health
+```
+curl http://localhost:3000/api/health
+```
+Hoặc mở trình duyệt và truy cập: http://localhost:3000/api/health
+
+#### Kiểm thử API Dịch thuật
+Bạn có thể kiểm thử API dịch thuật bằng các công cụ như Postman, curl, hoặc bất kỳ HTTP client nào:
+
+**Sử dụng curl:**
+
+Dịch văn bản với OpenAI (mặc định):
+```
+curl -X POST http://localhost:3000/api/translate \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Hello, how are you?", "targetLang": "vi"}'
+```
+
+Dịch văn bản với Microsoft Translator:
+```
+curl -X POST http://localhost:3000/api/translate/microsoft \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Hello, how are you?", "targetLang": "vi"}'
+```
+
+Chỉ định dịch vụ trong yêu cầu:
+```
+curl -X POST http://localhost:3000/api/translate \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Hello, how are you?", "targetLang": "vi", "service": "microsoft"}'
+```
+
+**Sử dụng Postman:**
+1. Tạo một yêu cầu POST đến http://localhost:3000/api/translate
+2. Đặt header Content-Type là application/json
+3. Trong tab Body, chọn "raw" và định dạng JSON, sau đó nhập:
+   ```json
+   {
+     "text": "Hello, how are you?",
+     "targetLang": "vi",
+     "service": "openai"
+   }
+   ```
+4. Gửi yêu cầu và kiểm tra phản hồi
+
+### Kiểm tra Logs
+Logs sẽ được hiển thị trong console và (trong chế độ production) được lưu trong thư mục logs:
+- `logs/error.log`: Chỉ chứa lỗi
+- `logs/combined.log`: Chứa tất cả các cấp độ log
+
+### Kiểm thử với Tiện ích mở rộng
+Nếu bạn đang phát triển tiện ích mở rộng Chrome:
+1. Đảm bảo rằng ID tiện ích của bạn đã được liệt kê trong `ALLOWED_ORIGINS` trong tệp `.env`
+2. Từ tiện ích của bạn, gửi yêu cầu đến `http://yourserver:3000/api/translate` với các tham số tương tự như trong các ví dụ trên
+
+### Lưu ý
+- Các khóa API thực tế không bao giờ được tiết lộ cho client, chỉ được sử dụng trên server
+- Server được cấu hình với giới hạn tần suất để ngăn chặn lạm dụng API
+- Tất cả các yêu cầu phải tuân theo định dạng JSON chính xác như trong các ví dụ
+- Các endpoint API chính sẽ trả về kết quả theo định dạng:
+  ```json
+  {
+    "translation": "Xin chào, bạn khỏe không?"
+  }
+  ```
+  Hoặc nếu có lỗi:
+  ```json
+  {
+    "error": "Lỗi dịch vụ dịch thuật",
+    "details": "Chi tiết lỗi ở đây"
+  }
+  ```
+
 ## API Endpoints
 
 ### Health Check
