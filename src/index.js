@@ -15,19 +15,26 @@ const PORT = process.env.PORT || 3000;
 // Apply security headers
 app.use(helmet());
 
-// Set up CORS
-const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl requests)
-    if (!origin) return callback(null, true);
+// // Set up CORS
+// const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
+// app.use(cors({
+//   origin: function (origin, callback) {
+//     // Allow requests with no origin (like mobile apps, curl requests)
+//     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
+//     if (allowedOrigins.indexOf(origin) === -1) {
+//       const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+//       return callback(new Error(msg), false);
+//     }
+//     return callback(null, true);
+//   },
+//   methods: ['GET', 'POST'],
+//   allowedHeaders: ['Content-Type', 'Authorization']
+// }));
+
+// Thay đổi phần cấu hình CORS
+app.use(cors({
+  origin: true, // Cho phép tất cả các origin
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
