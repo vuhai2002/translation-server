@@ -62,13 +62,9 @@ const limiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    const ip = req.ip || '';
-    const userAgent = req.headers['user-agent'] || '';
-    return `${ip}-${userAgent}`;
-  },
+  keyGenerator: (req) => req.headers['x-client-id'] || req.ip,
   handler: (req, res, _options) => {
-    logger.warn(`Rate limit exceeded for IP: ${req.ip}, User-Agent: ${req.headers['user-agent']}`);
+    logger.warn(`Rate limit exceeded for IP: ${req.ip}, User-Agent: ${req.headers['x-client-id']}`);
     res.status(429).json({ error: 'Too many requests from this IP/User-Agent, please try again later.' });
   }
 });
