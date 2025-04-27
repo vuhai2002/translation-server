@@ -45,13 +45,24 @@ app.use(morgan('combined', { stream: { write: message => logger.info(message.tri
 // Parse JSON body
 app.use(express.json());
 
+app.use((req, res, next) => {
+  logger.info(`Request received from IP: ${req.ip}`);
+  next();
+});
+
 // Apply rate limiting
 const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes by default
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // Limit each IP to 100 requests per windowMs
+  // windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes by default
+  // max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // Limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: 'Too many requests from this IP, please try again later.'
+  message: 'Too many requests from this IP, please try again later.',
+  handler: (req, res, _options, next) => {
+    logger.warn(`Rate limit exceeded for IP: ${req.ip}, current limit: ${_options.max} requests per ${_options.windowMs/60000} minutes`);
+    res.status(429).json({ error: 'Too many requests from this IP, please try again later.' });
+  }
 });
 app.use(limiter);
 
