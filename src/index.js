@@ -46,7 +46,7 @@ app.use(morgan('combined', { stream: { write: message => logger.info(message.tri
 app.use(express.json());
 
 app.use((req, res, next) => {
-  logger.info(`Request received from IP: ${req.ip}`);
+  logger.info(`Request received from IP: ${req.ip}, X-Forwarded-For: ${req.headers['x-forwarded-for']}`);
   next();
 });
 
