@@ -10,6 +10,7 @@ const healthRoutes = require('./routes/health');
 
 // Initialize express app
 const app = express();
+app.set('trust proxy', true); //Express tin tưởng headers từ proxy, bao gồm X-Forwarded-For
 const PORT = process.env.PORT || 3000;
 
 // Apply security headers
