@@ -48,7 +48,7 @@ app.use(express.json());
 
 app.use((req, res, next) => {
   //logger.info(`Request received from IP: ${req.ip}, X-Forwarded-For: ${req.headers['x-forwarded-for']}`); // Log the IP address of the request
-  logger.info('---------------------');
+  logger.info('=============');
   logger.info(`Request received from IP: ${req.ip}, IP chain: ${req.ips.join(' -> ')}, User-Agent=${req.headers['user-agent']}`); //Log all IP addresses in the chain
   logger.info('---------------------');
   next();
