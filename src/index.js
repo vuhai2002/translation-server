@@ -10,7 +10,7 @@ const healthRoutes = require('./routes/health');
 
 // Initialize express app
 const app = express();
-//app.set('trust proxy', true); //Express tin tưởng headers từ proxy, bao gồm X-Forwarded-For
+app.set('trust proxy', true); //Express tin tưởng headers từ proxy, bao gồm X-Forwarded-For
 const PORT = process.env.PORT || 3000;
 
 // Apply security headers
@@ -47,7 +47,10 @@ app.use(morgan('combined', { stream: { write: message => logger.info(message.tri
 app.use(express.json());
 
 app.use((req, res, next) => {
-  logger.info(`Request received from IP: ${req.ip}, X-Forwarded-For: ${req.headers['x-forwarded-for']}`);
+  //logger.info(`Request received from IP: ${req.ip}, X-Forwarded-For: ${req.headers['x-forwarded-for']}`); // Log the IP address of the request
+  logger.info('---------------------');
+  logger.info(`Request received from IP: ${req.ip}, IP chain: ${req.ips.join(' -> ')}, User-Agent=${req.headers['user-agent']}`); //Log all IP addresses in the chain
+  logger.info('---------------------');
   next();
 });
 
@@ -59,10 +62,14 @@ const limiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: 'Too many requests from this IP, please try again later.',
-  handler: (req, res, _options, next) => {
-    logger.warn(`Rate limit exceeded for IP: ${req.ip}, current limit: ${_options.max} requests per ${_options.windowMs/60000} minutes`);
-    res.status(429).json({ error: 'Too many requests from this IP, please try again later.' });
+  keyGenerator: (req) => {
+    const ip = req.ip || '';
+    const userAgent = req.headers['user-agent'] || '';
+    return `${ip}-${userAgent}`;
+  },
+  handler: (req, res, _options) => {
+    logger.warn(`Rate limit exceeded for IP: ${req.ip}, User-Agent: ${req.headers['user-agent']}`);
+    res.status(429).json({ error: 'Too many requests from this IP/User-Agent, please try again later.' });
   }
 });
 app.use(limiter);

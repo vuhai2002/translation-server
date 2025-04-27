@@ -1,9 +1,12 @@
 const winston = require('winston');
 const path = require('path');
+const moment = require('moment-timezone');
 
 // Define log format
 const logFormat = winston.format.combine(
-  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  winston.format.timestamp({
+    format: () => moment().tz('Asia/Ho_Chi_Minh').format('YYYY-MM-DD HH:mm:ss')
+  }),
   winston.format.errors({ stack: true }),
   winston.format.splat(),
   winston.format.json()
