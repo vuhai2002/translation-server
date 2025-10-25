@@ -32,10 +32,10 @@ async function translateWithOpenAI(text, targetLang) {
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
-        model: 'gpt-5-mini', // Use appropriate model
+        model: 'gpt-4.1-mini', // Use appropriate model
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.3,
-        max_tokens: 1000
+        temperature: 1.00,
+        max_tokens: 2048
       },
       {
         headers: {
