@@ -14,16 +14,20 @@ async function translateWithOpenAI(text, targetLang) {
     if (!text || typeof text !== 'string') {
       throw new Error('Invalid text provided');
     }
-    
+
     // Check API key is set
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       throw new Error('OpenAI API key not configured');
     }
-    
+
     // Prepare the prompt
-    const prompt = `Dịch chính xác và giữ nguyên ý nghĩa gốc của từ hoặc đoạn sau sang ${targetLang}, trả về đúng kết quả. Trả lời bằng ${targetLang}: ${text}`;
-    
+    const prompt = `You are a professional bilingual translator who specializes in precise and context-preserving translations. 
+                    Your task is to translate the given text into ${targetLang} with 100% accuracy, preserving the exact meaning, tone, and nuance of the original text. 
+                    Do not paraphrase, simplify, or localize cultural expressions unless required for linguistic clarity. Keep all proper nouns, dates, formatting, and emphasis exactly as in the source. 
+                    Return ONLY the translated text in ${targetLang}, with no explanation, notes, or additional commentary.
+                    Text to translate: ${text}`;
+
     // Make the request to OpenAI
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
@@ -40,7 +44,7 @@ async function translateWithOpenAI(text, targetLang) {
         }
       }
     );
-    
+
     // Extract and return the translated text
     if (response.data?.choices && response.data.choices.length > 0) {
       return response.data.choices[0].message.content.trim();
