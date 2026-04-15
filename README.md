@@ -1,17 +1,21 @@
 # Translation Server
 
-A secure proxy server for translation services like OpenAI and Microsoft Translator, built to support browser extensions without exposing API keys.
+A secure proxy server that forwards translation requests from the browser
+extension to an **OpenAI-compatible** chat completions endpoint, with an
+automatic fallback to Google's unofficial endpoint when the primary
+service is unavailable. API keys stay server-side.
 
 ## Features
 
-- Secure proxy for translation API calls
-- Support for multiple translation services (OpenAI, Microsoft Translator)
-- Built-in rate limiting and CORS protection
-- Dockerized for easy deployment
+- Proxy for any OpenAI-compatible chat completions API (base URL + model + key)
+- Automatic fallback to Google unofficial when the primary fails
+- Rate limiting (per IP + User-Agent) and CORS protection
+- Structured logging (Winston) with log rotation in production
+- Dockerized with localhost-only port binding and resource limits
 
 ## Requirements
 
-- Node.js 16+ (if running locally)
+- Node.js 20+ (if running locally)
 - Docker and Docker Compose (for containerized deployment)
 
 ## Getting Started
@@ -80,39 +84,30 @@ Bạn có thể kiểm thử API dịch thuật bằng các công cụ như Post
 
 **Sử dụng curl:**
 
-Dịch văn bản với OpenAI (mặc định):
+Dịch văn bản (primary → fallback tự động):
 ```
 curl -X POST http://localhost:3000/api/translate \
   -H "Content-Type: application/json" \
   -d '{"text": "Hello, how are you?", "targetLang": "vi"}'
 ```
 
-Dịch văn bản với Microsoft Translator:
-```
-curl -X POST http://localhost:3000/api/translate/microsoft \
-  -H "Content-Type: application/json" \
-  -d '{"text": "Hello, how are you?", "targetLang": "vi"}'
+Phản hồi trả về:
+```json
+{ "translation": "Xin chào, bạn khỏe không?", "source": "ai" }
 ```
 
-Chỉ định dịch vụ trong yêu cầu:
-```
-curl -X POST http://localhost:3000/api/translate \
-  -H "Content-Type: application/json" \
-  -d '{"text": "Hello, how are you?", "targetLang": "vi", "service": "microsoft"}'
-```
+Nếu primary lỗi, `source` sẽ là `"google-fallback"`.
 
 **Sử dụng Postman:**
-1. Tạo một yêu cầu POST đến http://localhost:3000/api/translate
-2. Đặt header Content-Type là application/json
-3. Trong tab Body, chọn "raw" và định dạng JSON, sau đó nhập:
+1. POST đến `http://localhost:3000/api/translate`
+2. Header: `Content-Type: application/json`
+3. Body (raw JSON):
    ```json
    {
      "text": "Hello, how are you?",
-     "targetLang": "vi",
-     "service": "openai"
+     "targetLang": "vi"
    }
    ```
-4. Gửi yêu cầu và kiểm tra phản hồi
 
 ### Kiểm tra Logs
 Logs sẽ được hiển thị trong console và (trong chế độ production) được lưu trong thư mục logs:
@@ -128,45 +123,41 @@ Nếu bạn đang phát triển tiện ích mở rộng Chrome:
 - Các khóa API thực tế không bao giờ được tiết lộ cho client, chỉ được sử dụng trên server
 - Server được cấu hình với giới hạn tần suất để ngăn chặn lạm dụng API
 - Tất cả các yêu cầu phải tuân theo định dạng JSON chính xác như trong các ví dụ
-- Các endpoint API chính sẽ trả về kết quả theo định dạng:
+- Endpoint trả về JSON:
   ```json
-  {
-    "translation": "Xin chào, bạn khỏe không?"
-  }
+  { "translation": "Xin chào, bạn khỏe không?", "source": "ai" }
   ```
-  Hoặc nếu có lỗi:
+  Hoặc nếu cả primary lẫn fallback đều lỗi:
   ```json
-  {
-    "error": "Lỗi dịch vụ dịch thuật",
-    "details": "Chi tiết lỗi ở đây"
-  }
+  { "error": "Translation service unavailable" }
   ```
 
 ## API Endpoints
 
 ### Health Check
-- `GET /api/health` - Check if the server is running
+- `GET /api/health` - Kiểm tra server đang chạy
 
 ### Translation
-- `POST /api/translate` - Translate text with default service (OpenAI)
-- `POST /api/translate/openai` - Translate text with OpenAI
-- `POST /api/translate/microsoft` - Translate text with Microsoft Translator
+- `POST /api/translate` - Dịch văn bản qua endpoint OpenAI-compatible, fallback Google khi lỗi
 
-#### Request Body Format
+#### Request Body
 ```json
 {
   "text": "Text to translate",
-  "targetLang": "vi",
-  "service": "openai" // Optional, defaults to OpenAI
+  "targetLang": "vi"
 }
 ```
 
-#### Định dạng Phản hồi
+#### Response
 ```json
 {
-  "translation": "Văn bản đã dịch ở đây"
+  "translation": "Văn bản đã dịch",
+  "source": "ai"
 }
 ```
+Trường `source` cho biết bản dịch đến từ đâu:
+- `ai` — primary OpenAI-compatible endpoint
+- `google-fallback` — Google unofficial (khi primary lỗi)
 
 ## Bảo mật
 
@@ -191,12 +182,13 @@ Nếu bạn đang phát triển tiện ích mở rộng Chrome:
 
 ## Cấu trúc Dự án
 
-- `src/index.js` - Điểm khởi đầu của ứng dụng, thiết lập Express server
-- `src/routes/` - Chứa các định tuyến API
-- `src/services/` - Chứa logic gọi đến các API dịch thuật (OpenAI, Microsoft)
-- `src/utils/` - Các tiện ích như logging
-- `docker-compose.yml` - Cấu hình Docker Compose để triển khai
-- `.env` - Cấu hình môi trường và API keys (không đưa vào git)
+- `src/index.js` - Điểm khởi đầu, thiết lập Express server, middleware, rate limiter
+- `src/routes/` - Định tuyến API (`health.js`, `translation.js`)
+- `src/services/openai-compatible.js` - Gọi primary endpoint OpenAI-compatible (cấu hình qua env)
+- `src/services/google-fallback.js` - Fallback qua Google unofficial
+- `src/utils/logger.js` - Winston logger với log rotation
+- `docker-compose.yml` - Docker Compose: port bind 127.0.0.1, memory/CPU/log limits
+- `.env` - `TRANSLATOR_BASE_URL` / `TRANSLATOR_API_KEY` / `TRANSLATOR_MODEL` (không commit)
 
 Server này cung cấp một cách an toàn để gọi các API dịch thuật mà không lộ API key trong extension. Server cũng bao gồm các tính năng bảo mật như giới hạn tần suất, CORS, và logging để giám sát.
 

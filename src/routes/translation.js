@@ -1,72 +1,51 @@
 const express = require('express');
-const { translateWithOpenAI } = require('../services/openai');
-const { translateWithMicrosoft } = require('../services/microsoft');
+const { translateWithOpenAICompatible } = require('../services/openai-compatible');
+const { translateWithGoogleFallback } = require('../services/google-fallback');
 const { logger } = require('../utils/logger');
 
 const router = express.Router();
 
-// Route to translate text using OpenAI
-router.post('/openai', async (req, res) => {
-  try {
-    const { text, targetLang } = req.body;
-    
-    if (!text || !targetLang) {
-      return res.status(400).json({ error: 'Missing required parameters: text and targetLang' });
-    }
-    
-    logger.info(`Translating to ${targetLang} using OpenAI`);
-    const translatedText = await translateWithOpenAI(text, targetLang);
-    
-    return res.json({ translation: translatedText });
-  } catch (error) {
-    logger.error(`OpenAI translation error: ${error.message}`);
-    return res.status(500).json({ error: 'Translation service error', details: error.message });
-  }
-});
-
-// Route to translate text using Microsoft Translator
-router.post('/microsoft', async (req, res) => {
-  try {
-    const { text, targetLang } = req.body;
-    
-    if (!text || !targetLang) {
-      return res.status(400).json({ error: 'Missing required parameters: text and targetLang' });
-    }
-    
-    logger.info(`Translating to ${targetLang} using Microsoft`);
-    const translatedText = await translateWithMicrosoft(text, targetLang);
-    
-    return res.json({ translation: translatedText });
-  } catch (error) {
-    logger.error(`Microsoft translation error: ${error.message}`);
-    return res.status(500).json({ error: 'Translation service error', details: error.message });
-  }
-});
-
-// Default translation route - choose service based on configuration or fallback
+/**
+ * POST /api/translate
+ * Body: { text: string, targetLang: string }
+ *
+ * Flow:
+ *   1. Try the primary OpenAI-compatible translator.
+ *   2. If it fails for any reason, fall back to the Google unofficial endpoint.
+ *   3. If both fail, return 500.
+ *
+ * Response: { translation: string, source: 'ai' | 'google-fallback' }
+ */
 router.post('/', async (req, res) => {
+  const { text, targetLang } = req.body;
+
+  if (!text || !targetLang) {
+    return res
+      .status(400)
+      .json({ error: 'Missing required parameters: text and targetLang' });
+  }
+
+  // Primary: OpenAI-compatible translator
   try {
-    const { text, targetLang, service } = req.body;
-    
-    if (!text || !targetLang) {
-      return res.status(400).json({ error: 'Missing required parameters: text and targetLang' });
-    }
-    
-    // Determine which service to use (default to OpenAI if not specified)
-    const translationService = service?.toLowerCase() === 'microsoft' ? 'microsoft' : 'openai';
-    logger.info(`Translating to ${targetLang} using ${translationService}`);
-    
-    let translatedText;
-    if (translationService === 'microsoft') {
-      translatedText = await translateWithMicrosoft(text, targetLang);
-    } else {
-      translatedText = await translateWithOpenAI(text, targetLang);
-    }
-    
-    return res.json({ translation: translatedText });
-  } catch (error) {
-    logger.error(`Translation error: ${error.message}`);
-    return res.status(500).json({ error: 'Translation service error', details: error.message });
+    const translation = await translateWithOpenAICompatible(text, targetLang);
+    logger.info(`Translated to ${targetLang} via primary (AI) translator`);
+    return res.json({ translation, source: 'ai' });
+  } catch (primaryError) {
+    logger.warn(
+      `Primary translator failed (${primaryError.message}); falling back to Google unofficial`
+    );
+  }
+
+  // Fallback: Google unofficial
+  try {
+    const translation = await translateWithGoogleFallback(text, targetLang);
+    logger.info(`Translated to ${targetLang} via Google fallback`);
+    return res.json({ translation, source: 'google-fallback' });
+  } catch (fallbackError) {
+    logger.error(`Fallback translator also failed: ${fallbackError.message}`);
+    return res
+      .status(500)
+      .json({ error: 'Translation service unavailable' });
   }
 });
 

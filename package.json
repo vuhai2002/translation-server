@@ -10,9 +10,9 @@
   },
   "keywords": [
     "translation",
-    "openai",
-    "microsoft",
-    "api"
+    "openai-compatible",
+    "chrome-extension",
+    "proxy"
   ],
   "author": "",
   "license": "ISC",
