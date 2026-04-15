@@ -4,9 +4,9 @@ services:
     container_name: translation-server
     restart: unless-stopped
     ports:
-      # Bind to localhost only — Docker otherwise bypasses UFW/iptables
-      # and exposes the port publicly. Use a reverse proxy (Caddy/Nginx)
-      # on 80/443 to forward traffic here.
+      # Bind to localhost only — Caddy reaches the container via the
+      # shared "nginx-proxy" Docker network, not via host port. The
+      # localhost binding is just for direct host-side debugging.
       - "127.0.0.1:3000:3000"
     volumes:
       - ./logs:/app/logs
@@ -27,7 +27,12 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    networks:
+      - proxy
 
 networks:
-  default:
-    driver: bridge
+  # Reuse the external network Caddy sits on so reverse_proxy
+  # "translation-server:3000" can resolve via Docker DNS.
+  proxy:
+    name: nginx-proxy
+    external: true
