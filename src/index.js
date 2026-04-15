@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { logger } = require('./utils/logger');
 const translationRoutes = require('./routes/translation');
 const healthRoutes = require('./routes/health');
@@ -54,18 +54,19 @@ app.use((req, res, next) => {
   next();
 });
 
-// Apply rate limiting
+// Apply rate limiting (express-rate-limit v8: use `limit` + `ipKeyGenerator` for IPv6 safety)
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes by default
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // Limit each IP to 100 requests per windowMs
-  standardHeaders: true,
+  limit: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // Limit each IP/UA combo per windowMs
+  standardHeaders: 'draft-7',
   legacyHeaders: false,
   keyGenerator: (req) => {
-    const ip = req.ip || '';
+    // ipKeyGenerator handles IPv6 subnet normalization (required in v8 custom keyGenerators)
+    const ipKey = ipKeyGenerator(req.ip || '');
     const userAgent = req.headers['user-agent'] || '';
-    return `${ip}-${userAgent}`;
+    return `${ipKey}-${userAgent}`;
   },
-  handler: (req, res, _options) => {
+  handler: (req, res, _next, _options) => {
     logger.warn(`Rate limit exceeded for IP: ${req.ip}, User-Agent: ${req.headers['user-agent']}`);
     res.status(429).json({ error: 'Too many requests from this IP/User-Agent, please try again later.' });
   }

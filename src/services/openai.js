@@ -29,10 +29,11 @@ async function translateWithOpenAI(text, targetLang) {
                     Text to translate: ${text}`;
 
     // Make the request to OpenAI
+    const model = process.env.OPENAI_MODEL || 'gpt-5-mini';
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
-        model: 'gpt-4.1-mini', // Use appropriate model
+        model, // Configurable via OPENAI_MODEL env var; default: gpt-5-mini
         messages: [{ role: 'user', content: prompt }],
         temperature: 1.00,
         max_tokens: 2048
