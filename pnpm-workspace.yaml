@@ -1,0 +1,29 @@
+# Decision record in the project's allowBuilds convention. pnpm itself does NOT
+# read `allowBuilds`; the keys it actually enforces are onlyBuiltDependencies /
+# ignoredBuiltDependencies below. Keep them in sync.
+allowBuilds:
+  unrs-resolver: false
+
+# --- Supply-chain hardening ---
+# NOTE: pnpm v11 reads these from pnpm-workspace.yaml (camelCase), NOT .npmrc.
+#
+# Wait 24h (1440 min) after a version is published before it may be installed,
+# giving the community time to detect and pull malicious releases.
+minimumReleaseAge: 1440
+# Unmet peer dependency ranges warn instead of failing the install.
+strictPeerDependencies: false
+# `pnpm audit` reports vulnerabilities at moderate severity and above.
+auditLevel: moderate
+
+# --- Dependency build-script policy ---
+# pnpm blocks postinstall/build scripts by default (supply-chain defense).
+# Packages allowed to build go in onlyBuiltDependencies; packages we
+# intentionally do NOT build go in ignoredBuiltDependencies (this silences the
+# "Ignored build scripts" error).
+#
+# unrs-resolver: dev-only transitive (jest -> jest-resolve). It ships a prebuilt
+# native binary (@unrs/resolver-binding-*), so jest resolves modules without
+# running the build-from-source script. Excluded from prod (`pnpm install --prod`).
+onlyBuiltDependencies: []
+ignoredBuiltDependencies:
+  - unrs-resolver

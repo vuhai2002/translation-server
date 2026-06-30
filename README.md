@@ -16,6 +16,7 @@ service is unavailable. API keys stay server-side.
 ## Requirements
 
 - Node.js 20+ (if running locally)
+- pnpm (via Corepack -- run `corepack enable` once; the exact version is pinned in `package.json`)
 - Docker and Docker Compose (for containerized deployment)
 
 ## Getting Started
@@ -26,11 +27,11 @@ service is unavailable. API keys stay server-side.
 2. Copy `.env.example` to `.env` and fill in your API keys
 3. Install dependencies:
    ```
-   npm install
+   pnpm install
    ```
 4. Start the development server:
    ```
-   npm run dev
+   pnpm run dev
    ```
 
 ### Production Deployment with Docker
@@ -48,7 +49,7 @@ service is unavailable. API keys stay server-side.
 Đầu tiên, bạn cần cài đặt các phụ thuộc của dự án:
 ```
 cd d:\SourceCode\translation-server
-npm install
+pnpm install
 ```
 
 ### Bước 2: Chạy Server
@@ -57,12 +58,12 @@ Bạn có thể chạy server theo hai cách:
 #### Cách 1: Chạy trực tiếp với Node.js
 Chạy ở chế độ development với nodemon (tự động khởi động lại khi code thay đổi):
 ```
-npm run dev
+pnpm run dev
 ```
 
 Hoặc chạy ở chế độ production:
 ```
-npm start
+pnpm start
 ```
 
 #### Cách 2: Chạy với Docker
