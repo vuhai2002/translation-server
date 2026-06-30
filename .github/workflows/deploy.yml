@@ -22,6 +22,6 @@ jobs:
         script: |
           cd ${{ secrets.PROJECT_PATH }}
           git pull origin main
-          docker-compose down
-          docker-compose up --build -d
-          docker image prune -af
+          docker compose down
+          docker compose up -d --build --wait --wait-timeout 60
+          docker image prune -f --filter "dangling=true"
