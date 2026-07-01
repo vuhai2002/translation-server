@@ -2,7 +2,18 @@ node_modules
 npm-debug.log
 logs
 .git
+.gitignore
+.gitattributes
+
+# Env: secrets + examples are never baked into the image (injected via env_file
+# at runtime).
 .env
 .env.example
-.gitignore
+.env.production
+.env.production.example
+
+# Deploy / ops artifacts not needed inside the image
+docker-compose*.yml
+deploy.sh
+DEPLOY.md
 README.md

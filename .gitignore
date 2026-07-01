@@ -1,8 +1,10 @@
 # Node modules
 node_modules/
 
-# Environment variables
+# Environment variables (real secrets; .example files stay tracked)
 .env
+.env.production
+.env.*.local
 
 # Logs
 logs
@@ -25,3 +27,5 @@ coverage/
 # OS files
 .DS_Store
 Thumbs.db
+
+.claude/

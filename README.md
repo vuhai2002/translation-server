@@ -36,12 +36,14 @@ service is unavailable. API keys stay server-side.
 
 ### Production Deployment with Docker
 
-1. Clone this repository on your server
-2. Copy `.env.example` to `.env` and fill in your API keys
-3. Build and start the Docker container:
-   ```
-   docker-compose up -d
-   ```
+Production runs on the VPS behind Cloudflare + Caddy, bound to host port
+`127.0.0.1:3002`. See [DEPLOY.md](DEPLOY.md) for the full guide (Cloudflare
+record, Caddy block, secrets, `deploy.sh`). On the server:
+
+```
+cp .env.production.example .env.production   # then fill in + chmod 600
+bash deploy.sh
+```
 
 ## Chạy và Kiểm thử
 
@@ -66,10 +68,11 @@ Hoặc chạy ở chế độ production:
 pnpm start
 ```
 
-#### Cách 2: Chạy với Docker
-Chạy server trong container Docker trên cổng 3000:
+#### Cách 2: Chạy với Docker (production)
+Triển khai production dùng `docker-compose.prod.yml` + `deploy.sh` (xem
+[DEPLOY.md](DEPLOY.md)). Chạy thử bằng Docker (cần `.env.production`):
 ```
-docker-compose up -d
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
 ### Bước 3: Kiểm thử API
@@ -175,11 +178,11 @@ Trường `source` cho biết bản dịch đến từ đâu:
 4. Đảm bảo cập nhật `ALLOWED_ORIGINS` trong `.env` với ID extension Chrome của bạn
 
 ### Triển khai VPS
-1. Sao chép toàn bộ thư mục lên VPS
-2. Cài đặt Docker và Docker Compose nếu chưa có
-3. Điều chỉnh `docker-compose.yml` nếu cần (ví dụ: thay đổi port)
-4. Chạy `docker-compose up -d` để khởi động server
-5. Server sẽ lắng nghe trên port 3000 (hoặc port bạn đã cấu hình)
+Chi tiết đầy đủ ở [DEPLOY.md](DEPLOY.md). Tóm tắt:
+1. Cloudflare: tạo record `translate-api.vuhai.io.vn` (proxied) -> IP VPS, SSL Full.
+2. Caddy: thêm site block -> `127.0.0.1:3002` (xem DEPLOY.md), rồi `sudo systemctl reload caddy`.
+3. Clone repo vào `/opt/apps/translation-server`, tạo `.env.production` (chmod 600).
+4. `bash deploy.sh` (git pull -> build -> up --wait -> health). Container bind `127.0.0.1:3002:3000`.
 
 ## Cấu trúc Dự án
 
@@ -188,7 +191,7 @@ Trường `source` cho biết bản dịch đến từ đâu:
 - `src/services/openai-compatible.js` - Gọi primary endpoint OpenAI-compatible (cấu hình qua env)
 - `src/services/google-fallback.js` - Fallback qua Google unofficial
 - `src/utils/logger.js` - Winston logger với log rotation
-- `docker-compose.yml` - Docker Compose: port bind 127.0.0.1, memory/CPU/log limits
+- `docker-compose.prod.yml` - Docker Compose production: bind `127.0.0.1:3002`, hardening + resource/log limits
 - `.env` - `TRANSLATOR_BASE_URL` / `TRANSLATOR_API_KEY` / `TRANSLATOR_MODEL` (không commit)
 
 Server này cung cấp một cách an toàn để gọi các API dịch thuật mà không lộ API key trong extension. Server cũng bao gồm các tính năng bảo mật như giới hạn tần suất, CORS, và logging để giám sát.
