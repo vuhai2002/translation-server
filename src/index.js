@@ -10,7 +10,7 @@ const healthRoutes = require('./routes/health');
 
 // Initialize express app
 const app = express();
-app.set('trust proxy', true); //Express tin tưởng headers từ proxy, bao gồm X-Forwarded-For
+app.set('trust proxy', 1); // Chỉ tin đúng 1 hop proxy tin cậy (host Caddy đã set X-Forwarded-For = Cf-Connecting-Ip); tránh cảnh báo 'trust proxy: true' permissive của express-rate-limit v8
 const PORT = process.env.PORT || 3000;
 
 // Apply security headers

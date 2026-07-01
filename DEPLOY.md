@@ -7,7 +7,7 @@ container bound to `127.0.0.1` -> no database (stateless proxy).
 
 | Item | Value |
 |---|---|
-| Domain | `translate-api.vuhai.io.vn` (Cloudflare proxied, SSL mode Full) |
+| Domain | `translate-api.vuhai.io.vn` (Cloudflare proxied, SSL mode Full (strict)) |
 | Host port | `127.0.0.1:3002` (Caddy proxies here) |
 | Container port | `3000` (internal) |
 | Database | none |
@@ -16,18 +16,18 @@ container bound to `127.0.0.1` -> no database (stateless proxy).
 ## One-time setup
 
 ### 1. Cloudflare
-Add DNS record `translate-api` (A) -> `103.77.240.24`, **proxied (orange cloud)**,
-SSL/TLS mode **Full**. A grey-cloud / direct-to-origin record is blocked by the
-origin firewall on `:443`.
+The `vuhai.io.vn` zone is already at SSL/TLS mode **Full (strict)**. Just add a
+DNS record `translate-api` (A) -> `103.77.240.24`, **proxied (orange cloud)**.
+A grey-cloud / direct-to-origin record is blocked by the origin firewall on `:443`.
 
 ### 2. Caddy (on the VPS)
 Append to `/etc/caddy/Caddyfile`, then
 `caddy validate --config /etc/caddy/Caddyfile && sudo systemctl reload caddy`:
 
 ```caddy
-# translation-server - behind Cloudflare (SSL: Full). Caddy internal CA on origin.
+# translation-server - Cloudflare Full (strict). CF Origin cert (wildcard *.vuhai.io.vn).
 translate-api.vuhai.io.vn {
-    tls internal
+    tls /etc/caddy/certs/toeic.vuhai.io.vn.pem /etc/caddy/certs/toeic.vuhai.io.vn.key
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
         X-Content-Type-Options "nosniff"
