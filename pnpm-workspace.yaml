@@ -1,12 +1,9 @@
-# Decision record in the project's allowBuilds convention. pnpm itself does NOT
-# read `allowBuilds`; the keys it actually enforces are onlyBuiltDependencies /
-# ignoredBuiltDependencies below. Keep them in sync.
-allowBuilds:
-  unrs-resolver: false
+# --- Supply-chain hardening (pnpm v11) ---
+# pnpm reads these from pnpm-workspace.yaml (camelCase), NOT .npmrc. Per pnpm
+# docs: "Only auth and registry settings are read from .npmrc files. All other
+# settings ... must be configured in pnpm-workspace.yaml."
+# Verified per pnpm docs: https://pnpm.io/settings (checked on pnpm 11.9.0).
 
-# --- Supply-chain hardening ---
-# NOTE: pnpm v11 reads these from pnpm-workspace.yaml (camelCase), NOT .npmrc.
-#
 # Wait 24h (1440 min) after a version is published before it may be installed,
 # giving the community time to detect and pull malicious releases.
 minimumReleaseAge: 1440
@@ -16,14 +13,16 @@ strictPeerDependencies: false
 auditLevel: moderate
 
 # --- Dependency build-script policy ---
-# pnpm blocks postinstall/build scripts by default (supply-chain defense).
-# Packages allowed to build go in onlyBuiltDependencies; packages we
-# intentionally do NOT build go in ignoredBuiltDependencies (this silences the
-# "Ignored build scripts" error).
+# pnpm v11 blocks postinstall/build scripts by default. `allowBuilds` is the
+# pnpm v11 key (a map: package -> true|false); it REPLACED the v10
+# onlyBuiltDependencies / ignoredBuiltDependencies list settings, which were
+# removed in v11. `true` = allow the build script; `false` = record an explicit
+# "do not build" decision (this silences the ERR_PNPM_IGNORED_BUILDS error).
+# Verified on pnpm 11.9.0: allowBuilds alone silences the error;
+# ignoredBuiltDependencies alone does not (fresh-install test).
 #
 # unrs-resolver: dev-only transitive (jest -> jest-resolve). It ships a prebuilt
 # native binary (@unrs/resolver-binding-*), so jest resolves modules without
 # running the build-from-source script. Excluded from prod (`pnpm install --prod`).
-onlyBuiltDependencies: []
-ignoredBuiltDependencies:
-  - unrs-resolver
+allowBuilds:
+  unrs-resolver: false
